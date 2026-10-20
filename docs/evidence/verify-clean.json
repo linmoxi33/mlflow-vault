@@ -1,0 +1,18 @@
+{
+  "artifact_coverage": {
+    "empty_dirs": 0,
+    "empty_run_ids": [],
+    "local_runs": 4,
+    "missing_dirs": 0,
+    "missing_run_ids": [],
+    "packaged_artifact_files": 12,
+    "remote_runs": 0
+  },
+  "backup": "E:\\WorkBuddy-Work\\Workbuddy-Github-1\\mlflow-vault\\_drill\\backup",
+  "checked_bytes": 973319,
+  "checked_files": 14,
+  "errors": [],
+  "logical_rows": 85,
+  "ok": true,
+  "warnings": []
+}

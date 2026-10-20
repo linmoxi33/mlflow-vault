@@ -1,0 +1,177 @@
+{
+  "artifacts": {
+    "audit-source.json": "E:\\WorkBuddy-Work\\Workbuddy-Github-1\\mlflow-vault\\_drill\\audit-source.json",
+    "audit-source.txt": "E:\\WorkBuddy-Work\\Workbuddy-Github-1\\mlflow-vault\\_drill\\audit-source.txt",
+    "negative-control.txt": "E:\\WorkBuddy-Work\\Workbuddy-Github-1\\mlflow-vault\\_drill\\negative-control.txt",
+    "readback.json": "E:\\WorkBuddy-Work\\Workbuddy-Github-1\\mlflow-vault\\_drill\\readback.json",
+    "restore.json": "E:\\WorkBuddy-Work\\Workbuddy-Github-1\\mlflow-vault\\_drill\\restore.json",
+    "tamper.json": "E:\\WorkBuddy-Work\\Workbuddy-Github-1\\mlflow-vault\\_drill\\tamper.json",
+    "verify-clean.json": "E:\\WorkBuddy-Work\\Workbuddy-Github-1\\mlflow-vault\\_drill\\verify-clean.json"
+  },
+  "ok": true,
+  "steps": [
+    {
+      "data": {
+        "db": "E:\\WorkBuddy-Work\\Workbuddy-Github-1\\mlflow-vault\\_drill\\store\\mlflow.db",
+        "runs": [
+          "83c84e8984164d039de3f6b6131b9601",
+          "3d0bb1b8a2494722ba41784723924f50",
+          "18cf1d80831d4888a23dc870bad8dd69",
+          "918a4d5cc1b7464eaa8c596e0feec22d"
+        ]
+      },
+      "detail": "4 runs, [4096, 4096, 4096, 4096] artifacts written (7.6s)",
+      "ok": true,
+      "step": "build-store"
+    },
+    {
+      "data": {
+        "bytes": 973319,
+        "files": 14,
+        "root_hash": "bca0934dec5847f5e21482e5a5ff1d6a63b9d598201e71d1e03a140d6f3d9e99",
+        "secrets": 8,
+        "warnings": []
+      },
+      "detail": "14 files / 973319 bytes / 8 secrets logged (0.2s)",
+      "ok": true,
+      "step": "backup"
+    },
+    {
+      "data": {
+        "artifact_coverage": {
+          "empty_dirs": 0,
+          "empty_run_ids": [],
+          "local_runs": 4,
+          "missing_dirs": 0,
+          "missing_run_ids": [],
+          "packaged_artifact_files": 12,
+          "remote_runs": 0
+        },
+        "backup": "E:\\WorkBuddy-Work\\Workbuddy-Github-1\\mlflow-vault\\_drill\\backup",
+        "checked_bytes": 973319,
+        "checked_files": 14,
+        "errors": [],
+        "logical_rows": 85,
+        "ok": true,
+        "warnings": []
+      },
+      "detail": "14 files hashed, 973319 bytes, 85 rows, errors=0",
+      "ok": true,
+      "step": "verify-clean"
+    },
+    {
+      "data": {
+        "artifact-byte-flip": {
+          "detected": true,
+          "errors": [
+            "hash-mismatch"
+          ],
+          "named_file": [
+            "mlruns/18cf1d80831d4888a23dc870bad8dd69/artifacts/meta/run2.json"
+          ]
+        },
+        "artifact-deleted": {
+          "detected": true,
+          "errors": [
+            "file-missing"
+          ],
+          "named_file": [
+            "mlruns/18cf1d80831d4888a23dc870bad8dd69/artifacts/meta/run2.json"
+          ]
+        },
+        "db-truncated": {
+          "detected": true,
+          "errors": [
+            "size-mismatch",
+            "db-unreadable"
+          ],
+          "named_file": [
+            "db/mlflow.db",
+            "db/mlflow.db"
+          ]
+        }
+      },
+      "detail": "artifact-byte-flip:CAUGHT; artifact-deleted:CAUGHT; db-truncated:CAUGHT",
+      "ok": true,
+      "step": "tamper-detect"
+    },
+    {
+      "data": {
+        "bytes_copied": 16616,
+        "db_rows_matched": true,
+        "dry_run": false,
+        "files_copied": 12,
+        "files_skipped": 0,
+        "kept_count": 0,
+        "ok": true,
+        "post": {
+          "artifact_uris_inside_target": 4,
+          "artifact_uris_total": 4,
+          "dangling": [],
+          "dangling_count": 0,
+          "mlruns_present": true,
+          "rows_match": true
+        },
+        "problems": [],
+        "rewrite_count": 4,
+        "target": "E:\\WorkBuddy-Work\\Workbuddy-Github-1\\mlflow-vault\\_drill\\restored",
+        "verified_rows": 85,
+        "warnings": []
+      },
+      "detail": "12 artifacts copied, 85 rows matched, 4 URIs rewritten, dangling=0 (0.1s)",
+      "ok": true,
+      "step": "restore"
+    },
+    {
+      "data": {
+        "artifacts": 12,
+        "detail": [
+          {
+            "artifact_uri": "E:/WorkBuddy-Work/Workbuddy-Github-1/mlflow-vault/_drill/restored/mlruns/918a4d5cc1b7464eaa8c596e0feec22d/artifacts",
+            "artifacts": 6,
+            "metrics": 4,
+            "params": 3,
+            "run_id": "918a4d5cc1b7464eaa8c596e0feec22d"
+          },
+          {
+            "artifact_uri": "E:/WorkBuddy-Work/Workbuddy-Github-1/mlflow-vault/_drill/restored/mlruns/18cf1d80831d4888a23dc870bad8dd69/artifacts",
+            "artifacts": 6,
+            "metrics": 4,
+            "params": 3,
+            "run_id": "18cf1d80831d4888a23dc870bad8dd69"
+          },
+          {
+            "artifact_uri": "E:/WorkBuddy-Work/Workbuddy-Github-1/mlflow-vault/_drill/restored/mlruns/3d0bb1b8a2494722ba41784723924f50/artifacts",
+            "artifacts": 6,
+            "metrics": 4,
+            "params": 3,
+            "run_id": "3d0bb1b8a2494722ba41784723924f50"
+          },
+          {
+            "artifact_uri": "E:/WorkBuddy-Work/Workbuddy-Github-1/mlflow-vault/_drill/restored/mlruns/83c84e8984164d039de3f6b6131b9601/artifacts",
+            "artifacts": 6,
+            "metrics": 4,
+            "params": 3,
+            "run_id": "83c84e8984164d039de3f6b6131b9601"
+          }
+        ],
+        "runs": 4
+      },
+      "detail": "MLflow SDK re-read 4 runs / 12 top-level artifacts, all metrics+artifacts resolvable",
+      "ok": true,
+      "step": "readback"
+    },
+    {
+      "data": {
+        "dangling": 4,
+        "loss_simulated": true,
+        "sdk_readback_failed": true,
+        "total_uris": 4
+      },
+      "detail": "db-only copy after artifact loss: 4/4 dirs dangling, SDK readback failed as expected (run 918a4d5cc1b7464eaa8c596e0feec22d restored with 0 artifacts — this is the sil)",
+      "ok": true,
+      "step": "negative-control"
+    }
+  ],
+  "workdir": "E:\\WorkBuddy-Work\\Workbuddy-Github-1\\mlflow-vault\\_drill"
+}

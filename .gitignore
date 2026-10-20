@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+# Drill output is evidence, not source: regenerate with `mlflow-vault drill`.
+_drill/

@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlflow-vault"
+version = "0.1.0"
+description = "Backup, verify and restore MLflow tracking data without losing a single artifact"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Vespera" }]
+keywords = ["mlflow", "backup", "integrity", "restore", "disaster-recovery", "mlops"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: System :: Archiving :: Backup",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.6"]
+# Only needed to *create* a real MLflow store for the drill; never imported by the tool.
+drill = ["mlflow>=2.9"]
+
+[project.scripts]
+mlflow-vault = "mlflow_vault.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+# Make `src/` importable without an editable install, and expose the fixture
+# helpers in conftest.py as a plain module (no package, no import mode tricks).
+pythonpath = ["src", "tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "SIM", "RUF"]
+# UP006/UP035/UP045 are deliberately off: every module uses
+# `from __future__ import annotations`, but explicit `Dict`/`Optional` in
+# dataclass field declarations documents the wire format the manifest serialises,
+# and rewriting them would touch every signature for no behavioural gain.
+ignore = [
+    "E501",   # long lines are used for readable docstring/table alignment
+    "UP006", "UP035", "UP045",  # keep explicit typing in dataclass wire formats
+    "SIM108", # ternaries here would hide the branch order
+    "SIM105", # contextlib.suppress reads worse than try/except/pass for cleanup
+    "SIM115", # tests read short fixture files inline for readability
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mlflow_vault"]

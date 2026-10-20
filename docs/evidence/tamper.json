@@ -1,0 +1,31 @@
+{
+  "artifact-byte-flip": {
+    "detected": true,
+    "errors": [
+      "hash-mismatch"
+    ],
+    "named_file": [
+      "mlruns/18cf1d80831d4888a23dc870bad8dd69/artifacts/meta/run2.json"
+    ]
+  },
+  "artifact-deleted": {
+    "detected": true,
+    "errors": [
+      "file-missing"
+    ],
+    "named_file": [
+      "mlruns/18cf1d80831d4888a23dc870bad8dd69/artifacts/meta/run2.json"
+    ]
+  },
+  "db-truncated": {
+    "detected": true,
+    "errors": [
+      "size-mismatch",
+      "db-unreadable"
+    ],
+    "named_file": [
+      "db/mlflow.db",
+      "db/mlflow.db"
+    ]
+  }
+}
