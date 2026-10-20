@@ -19,7 +19,7 @@ import json
 import pathlib
 import subprocess
 import sys
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 SKIP_DIRS = {
     ".git",
@@ -32,7 +32,8 @@ SKIP_DIRS = {
     ".venv",
     "_drill",
 }
-SKIP_SUFFIXES = {".pyc", ".pyo", ".whl", ".egg-info"}
+SKIP_SUFFIXES = {".pyc", ".pyo", ".whl"}
+SKIP_NAME_SUFFIXES = (".egg-info",)
 
 
 def gh_api(path: str) -> dict:
@@ -52,7 +53,9 @@ def local_files(root: pathlib.Path) -> List[Tuple[str, pathlib.Path]]:
         rel = path.relative_to(root)
         if any(part in SKIP_DIRS for part in rel.parts):
             continue
-        if path.suffix in SKIP_SUFFIXES or path.name.endswith(".egg-info"):
+        if path.suffix in SKIP_SUFFIXES:
+            continue
+        if any(part.endswith(SKIP_NAME_SUFFIXES) for part in rel.parts):
             continue
         out.append((rel.as_posix(), path))
     return out

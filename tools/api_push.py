@@ -40,7 +40,8 @@ SKIP_DIRS = {
     ".venv",
     "_drill",
 }
-SKIP_SUFFIXES = {".pyc", ".pyo", ".whl", ".egg-info"}
+SKIP_SUFFIXES = {".pyc", ".pyo", ".whl"}
+SKIP_NAME_SUFFIXES = (".egg-info",)
 
 # A tiny file that must exist so the empty-repo bootstrap has something to PUT.
 BOOTSTRAP_FILE = ".gitattributes"
@@ -79,7 +80,7 @@ def collect(root: pathlib.Path) -> List[Tuple[str, pathlib.Path]]:
             continue
         if path.suffix in SKIP_SUFFIXES:
             continue
-        if path.name.endswith(".egg-info"):
+        if any(part.endswith(SKIP_NAME_SUFFIXES) for part in rel.parts):
             continue
         files.append((rel.as_posix(), path))
     return files
@@ -90,7 +91,7 @@ def ensure_repo(repo: str, private: bool, description: str) -> None:
     if info:
         print(f"repo exists: {info['html_url']}")
         return
-    owner, name = repo.split("/", 1)
+    name = repo.split("/", 1)[1]
     payload = {
         "name": name,
         "description": description,
