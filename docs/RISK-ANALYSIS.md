@@ -153,7 +153,7 @@ nobody could audit.
 | `verify` exits non-zero | it is meant to be a cron/CI gate, not a report you read |
 | Secrets ledger stores hashes, not values | the ledger's job is "where do I rotate", not "what was it" |
 | Backup keeps original secret values | a backup that edits payloads is not a backup; redaction is a separate, explicit act |
-| `redact` runs `secure_delete` + `VACUUM` | an UPDATE leaves the old bytes in free pages — measured 4/4 still findable |
+| `redact` forces `secure_delete` + `VACUUM` | an UPDATE leaves old bytes in free pages when `secure_delete` is off (6/6 still findable); the default is a build-time choice, so it is set explicitly |
 | Restore defaults to a fresh directory | restoring into a fresh dir *is* the test; refusing to overwrite prevents the drill from destroying the evidence |
 | Remote artifacts are recorded, not downloaded | downloading an S3 bucket is the provider's job; pretending to do it would be worse than saying so |
 | `drill` includes a negative control | a test that cannot fail proves nothing; the control keeps the drill honest |
@@ -204,5 +204,13 @@ Python 3.13):
 The interesting result is the last pair. Redaction that breaks verification would
 be useless (you could not tell redaction from corruption); redaction that passes
 verification while leaving plaintext in free pages would be dangerous. Both
-properties are asserted by tests, and the VACUUM's necessity is asserted by a test
-that fails if a bare UPDATE ever becomes sufficient.
+properties are asserted by tests.
+
+The `secure_delete` story is the clearest example of why the drill-and-CI loop
+matters more than reasoning. The first version of that test asserted, as a fact of
+nature, that a bare `UPDATE` leaves plaintext behind. It passed on Windows and
+failed on the Ubuntu CI runner — because `secure_delete`'s default is a **build-time
+option**, not a universal. The correct conclusion was not "the test was too strict"
+but "the default must never be relied on": `redact` now sets the pragma explicitly,
+and the test pins both halves (`OFF` → residue, `ON` → none) so a future SQLite
+build cannot quietly change what the tool's safety claim means.

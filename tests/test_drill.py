@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 
 import pytest
 from conftest import make_store
@@ -126,7 +127,18 @@ class TestTamperCaseSelection:
 
 class TestReadbackGuard:
     def test_missing_db_raises_assertion(self, tmp_path):
+        # Must be AssertionError (a finding about the data), not ModuleNotFoundError
+        # (a finding about the environment). Those two got conflated when the SDK
+        # import happened before the file check, and the test caught it.
         with pytest.raises(AssertionError):
+            D.readback_via_sdk(str(tmp_path), expect_runs=1)
+
+    def test_missing_sdk_raises_runtime_not_assertion(self, tmp_path, monkeypatch):
+        # A store that exists but no SDK: distinct, actionable error.
+        (tmp_path / "mlflow.db").write_bytes(b"")
+        monkeypatch.setitem(sys.modules, "mlflow", None)
+        monkeypatch.setitem(sys.modules, "mlflow.tracking", None)
+        with pytest.raises((RuntimeError, ImportError)):
             D.readback_via_sdk(str(tmp_path), expect_runs=1)
 
 

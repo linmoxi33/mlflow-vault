@@ -101,10 +101,26 @@ is a *new copy of those secrets on new media*, so it needs a stated policy:
 
 `UPDATE params SET value = '<redacted…>'` changes what a query returns. It does
 **not** remove the old bytes: SQLite leaves the previous cell in the page's free
-space, so `grep sk-live backup.db` still finds every secret. Measured on the
-project's own fixture — after a bare UPDATE, **4 of 4** original secrets were still
-byte-findable; after `secure_delete` + `VACUUM`, **0**. There is a test
-(`TestSecurePurgeIsLoadBearing`) that fails if that stops being true.
+space, so `grep sk-live backup.db` still finds every secret.
+
+Whether that happens depends on `secure_delete`, and **its default is a build-time
+choice** — some SQLite builds compile in `SQLITE_SECURE_DELETE` (default on), most
+CPython/distro builds do not. Measured on the same fixture:
+
+| `secure_delete` | secrets still byte-findable after a bare UPDATE |
+|---|---|
+| `OFF` | 6 / 6 |
+| `ON` | 0 / 6 |
+
+So the default cannot be trusted in either direction, and `redact` sets it
+explicitly before writing, then `VACUUM`s (secure_delete zeroes cells as they are
+freed, but pages already on the freelist keep their old images). Afterwards it
+scans the raw bytes and reports `plaintext_remaining`, which must be 0.
+
+This cost a CI failure to learn: the original test asserted the residue
+unconditionally, passing on Windows (default off) and failing on the Ubuntu runner
+(default on). The lesson was not "loosen the test" — it was that the mode has to be
+forced. `TestSecurePurgeIsLoadBearing` now pins **both** halves of the fact.
 
 A redacted package still **verifies**: the manifest is recomputed to match the new
 bytes, and the original digests are kept under `redaction.original_digests` so a
@@ -187,7 +203,7 @@ pip install -e ".[drill]"    # adds the mlflow SDK, only needed for `drill`
 ## Tests
 
 ```bash
-pytest            # 286 tests
+pytest            # 288 tests
 ruff check src tests
 ```
 

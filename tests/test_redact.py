@@ -147,18 +147,24 @@ class TestSecurePurgeIsLoadBearing:
     """A query-level check is not enough, and this proves it by construction.
 
     ``UPDATE params SET value='<redacted…>'`` changes what a query returns while
-    leaving the previous cell bytes in the page's free space. Verified by mutation:
-    after UPDATE alone, all 4 original secrets are still findable in the file; after
-    ``secure_delete`` + ``VACUUM``, zero. If this test ever passes trivially, the
-    redaction claim in the README has become false.
+    leaving the previous cell bytes in the page's free space — *if* ``secure_delete``
+    is off. And that default is a **build-time** choice: SQLite can be compiled with
+    ``SQLITE_SECURE_DELETE``, and some distributions do exactly that.
+
+    This cost a CI failure to learn: the original version of this test asserted the
+    residue unconditionally and passed on Windows (default off) while failing on the
+    Ubuntu runner (default on). The lesson is not "the test was too strict" — it is
+    that **the default must never be relied on**, which is why ``_secure_purge`` sets
+    ``secure_delete`` explicitly instead of trusting the build.
     """
 
-    def test_update_alone_leaves_plaintext(self, pkg, tmp_path):
+    def _bare_update(self, snap, secure_delete: str):
+        """Apply the mask with a bare UPDATE and an explicit secure_delete mode."""
         from mlflow_vault import db as dbmod
 
-        snap = os.path.join(pkg["backup"], "db", "mlflow.db")
         hits = RD._scan(snap)
         con = dbmod.connect(snap)
+        con.execute(f"PRAGMA secure_delete={secure_delete}")
         for table, run_id, key, _value in hits:
             id_col = RD._id_column(con, table)
             con.execute(
@@ -167,24 +173,28 @@ class TestSecurePurgeIsLoadBearing:
             )
         con.commit()
         con.close()
+        return hits
+
+    def test_update_alone_leaves_plaintext_when_secure_delete_is_off(self, pkg):
+        snap = os.path.join(pkg["backup"], "db", "mlflow.db")
+        hits = self._bare_update(snap, "OFF")
         originals = [v for _, _, _, v in hits]
-        assert RD._scan_raw(snap, originals), "expected plaintext to survive a bare UPDATE"
+        assert RD._scan_raw(snap, originals), (
+            "with secure_delete=OFF the old cell bytes must still be in the file; "
+            "if this fails the premise of the purge has changed"
+        )
 
-    def test_purge_removes_it(self, pkg):
-        from mlflow_vault import db as dbmod
-
+    def test_update_alone_is_clean_when_secure_delete_is_on(self, pkg):
+        # The other half of the same fact, and the reason the mode is forced.
         snap = os.path.join(pkg["backup"], "db", "mlflow.db")
-        hits = RD._scan(snap)
-        con = dbmod.connect(snap)
-        for table, run_id, key, _value in hits:
-            id_col = RD._id_column(con, table)
-            con.execute(
-                f"UPDATE {table} SET value = ? WHERE {id_col} = ? AND key = ?",
-                ("<redacted>", run_id, key),
-            )
-        con.commit()
-        con.close()
-        RD._secure_purge(snap)
+        hits = self._bare_update(snap, "ON")
+        assert RD._scan_raw(snap, [v for _, _, _, v in hits]) == []
+
+    def test_purge_forces_the_mode_regardless_of_default(self, pkg):
+        snap = os.path.join(pkg["backup"], "db", "mlflow.db")
+        hits = self._bare_update(snap, "OFF")
+        info = RD._secure_purge(snap)
+        assert info["secure_delete_effective"] == 1
         assert RD._scan_raw(snap, [v for _, _, _, v in hits]) == []
 
     def test_real_redaction_reports_zero_remaining(self, pkg, tmp_path):
@@ -192,6 +202,7 @@ class TestSecurePurgeIsLoadBearing:
         report = RD.redact_backup(pkg["backup"], out)
         assert report["plaintext_remaining"] == 0
         assert "clean" in report["raw_scan"]
+        assert report["purge"]["vacuum"] is True
 
     def test_purge_leaves_no_sidecars(self, pkg):
         snap = os.path.join(pkg["backup"], "db", "mlflow.db")

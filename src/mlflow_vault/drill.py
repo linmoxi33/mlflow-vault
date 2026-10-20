@@ -181,12 +181,24 @@ def readback_via_sdk(root: str, expect_runs: int) -> Dict[str, object]:
 
     This is the step that catches "the files are there but nothing resolves":
     the SDK resolves ``artifact_uri`` the same way a user's notebook would.
-    """
-    from mlflow.tracking import MlflowClient
 
+    The existence check comes *before* the import on purpose. A missing database is
+    a finding about the backup; a missing SDK is a finding about the environment.
+    Importing first made the two indistinguishable — a test asserting "no db raises
+    AssertionError" failed with ModuleNotFoundError on machines without MLflow.
+    """
     db_path = os.path.join(root, "mlflow.db")
     if not os.path.isfile(db_path):
         raise AssertionError(f"restored store has no db at {db_path}")
+
+    try:
+        from mlflow.tracking import MlflowClient
+    except ImportError as exc:  # pragma: no cover - environment problem, not data
+        raise RuntimeError(
+            "the mlflow SDK is not installed, so the readback cannot run; "
+            "install it with `pip install 'mlflow-vault[drill]'`"
+        ) from exc
+
     uri = "sqlite:///" + db_path.replace("\\", "/")
     client = MlflowClient(tracking_uri=uri, registry_uri=uri)
 

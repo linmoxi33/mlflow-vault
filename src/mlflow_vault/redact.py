@@ -122,11 +122,11 @@ def redact_backup(
     # database still contains every plaintext secret verbatim — `grep sk-live` finds
     # them. Rewriting the value only changes what a query returns.
     #
-    # Two remedies, both required:
-    #   * ``PRAGMA secure_delete=ON`` before writing, so freed cells are zeroed;
-    #   * ``VACUUM`` after, so pages are rebuilt and the old images are gone.
-    # Without VACUUM, secure_delete alone leaves the pre-existing freelist pages.
-    _secure_purge(snap)
+    # Whether that happens depends on ``secure_delete``, whose default is a
+    # build-time choice (SQLITE_SECURE_DELETE). It cannot be assumed in either
+    # direction, so _secure_purge sets it explicitly and also VACUUMs to clear
+    # pages that were already free before this connection opened.
+    report["purge"] = _secure_purge(snap)
 
     leaked = _scan_raw(snap, [v for _, _, _, v in hits])
     report["plaintext_remaining"] = len(leaked)
@@ -141,10 +141,30 @@ def redact_backup(
     return report
 
 
-def _secure_purge(snap: str) -> None:
+def _secure_purge(snap: str) -> Dict[str, object]:
+    """Erase freed cell contents, then rebuild the file.
+
+    🔴 An UPDATE does not remove the old bytes: SQLite leaves the previous cell
+    payload in the page's free space, so the "redacted" database still contains
+    every plaintext secret verbatim — ``grep sk-live`` finds them. Rewriting the
+    value only changes what a query returns.
+
+    Whether that happens depends on ``secure_delete``, and **its default is a
+    build-time choice**: some SQLite builds ship with ``SQLITE_SECURE_DELETE``
+    compiled in (default ON), most distro/CPython builds do not. Measured on the
+    same data: with ``secure_delete=OFF`` all 6 secrets survived a bare UPDATE;
+    with ``ON``, zero. So the default cannot be relied on in either direction —
+    it has to be set explicitly, which is what this does.
+
+    ``VACUUM`` is still required on top of ``secure_delete``: secure_delete zeroes
+    cells as they are freed, but pages that were *already* on the freelist before
+    this connection opened keep their old images.
+    """
     con = dbmod.connect(snap)
     try:
+        default_mode = con.execute("PRAGMA secure_delete").fetchone()[0]
         con.execute("PRAGMA secure_delete=ON")
+        effective = con.execute("PRAGMA secure_delete").fetchone()[0]
         con.commit()
         con.execute("VACUUM")
         con.commit()
@@ -158,6 +178,11 @@ def _secure_purge(snap: str) -> None:
                 os.remove(p)
             except OSError:  # pragma: no cover - locked on Windows
                 pass
+    return {
+        "secure_delete_default": int(default_mode),
+        "secure_delete_effective": int(effective),
+        "vacuum": True,
+    }
 
 
 def _scan_raw(snap: str, originals: List[str]) -> List[str]:
